@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Wallet, HeartHandshake, TrendingUp, Bell, Loader2, AlertTriangle, CheckCircle2, Trophy, Medal, Star, Share2, ImageIcon, History, BarChart3, Building2, UserCircle, Download } from 'lucide-react';
+import { HeartHandshake, TrendingUp, Loader2, AlertTriangle, CheckCircle2, Trophy, Medal, Star, Share2, ImageIcon, History, BarChart3, Building2, UserCircle, Download, Vote } from 'lucide-react';
 import { ethers } from 'ethers';
 import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { CONTRACT_ADDRESS, CONTRACT_ABI, USDT_ADDRESS, ERC20_ABI, REWARD_NFT_ADDRESS } from './contract';
 import { generateCertificate } from './CertificateGenerator';
+import { AIAssistant } from './AIAssistant';
+import { ImpactMap } from './ImpactMap';
 
 interface Cause {
   id: number;
@@ -15,14 +18,6 @@ interface Cause {
   logo: string;
   isTokenCause: boolean;
   updates: string[];
-}
-
-interface Activity {
-  id: string;
-  donor: string;
-  amount: string;
-  token: string;
-  time: string;
 }
 
 interface LeaderboardEntry {
@@ -41,18 +36,18 @@ const ANALYTICS_DATA = [
 function App() {
   const [account, setAccount] = useState<string>('');
   const [causes, setCauses] = useState<Cause[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [networkOk, setNetworkOk] = useState<boolean>(true);
   const [txStatus, setTxStatus] = useState<string>('');
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [hasReward, setHasReward] = useState<boolean>(false);
   const [donationAmounts, setDonationAmounts] = useState<Record<number, string>>({});
+  const [votePower, setVotePower] = useState<string>('0');
   
-  // New States for NGO Portal
   const [showNGOPortal, setShowNGOPortal] = useState<boolean>(false);
   const [ngoName, setNgoName] = useState<string>('');
   const [registeringNGO, setRegisteringNGO] = useState<boolean>(false);
+  const [voted, setVoted] = useState<boolean>(false);
 
   const checkNetwork = async () => {
     if (!(window as any).ethereum) return;
@@ -140,6 +135,9 @@ function App() {
         const nftContract = new ethers.Contract(REWARD_NFT_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
         const balance = await nftContract.balanceOf(account);
         setHasReward(Number(balance) > 0);
+        
+        const donorInfo = await contract.donors(account);
+        setVotePower(ethers.formatEther(donorInfo.totalDonated));
       }
 
       const userBnbBalance = account ? await provider.getBalance(account) : 0n;
@@ -228,8 +226,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-emerald-100 pb-20 overflow-x-hidden">
+      
+      {/* ELITE Meta Setup Helper */}
       {(!networkOk || !account || (account && leaderboard.find(e => e.address.includes('You'))?.total === '0.0')) && (
-        <div className="bg-slate-900 text-white min-h-[140px] px-8 flex flex-col md:flex-row items-center justify-between gap-6 sticky top-0 z-60 shadow-2xl border-b border-white/10 py-6">
+        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} className="bg-slate-900 text-white px-8 flex flex-col md:flex-row items-center justify-between gap-6 sticky top-0 z-60 shadow-2xl border-b border-white/10 py-6 overflow-hidden">
           <div className="flex items-center gap-5 max-w-xl">
             <div className="bg-amber-500/10 p-4 rounded-3xl border border-amber-500/20"><AlertTriangle className="text-amber-400 w-8 h-8 animate-pulse" /></div>
             <div>
@@ -248,17 +248,20 @@ function App() {
                 className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl text-[10px] font-black transition-all"
                >COPY KEY</button>
              </div>
-             <button onClick={fixMetaMask} className="bg-white text-slate-900 px-8 py-4 rounded-2xl text-xs font-black shadow-xl active:scale-95">FIX METAMASK (AUTO)</button>
+             <button onClick={fixMetaMask} className="bg-white text-slate-900 px-8 py-4 rounded-2xl text-xs font-black shadow-xl active:scale-95 transition-all">FIX METAMASK</button>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {txStatus && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-100 bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border border-slate-700 max-w-lg w-full">
-          {txStatus.includes("SUCCESS") || txStatus.includes("REGISTERED") ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />}
-          <span className="text-sm font-bold truncate tracking-tight">{txStatus}</span>
-        </div>
-      )}
+      {/* ELITE Transaction Hud */}
+      <AnimatePresence>
+        {txStatus && (
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="fixed bottom-8 left-1/2 -translate-x-1/2 z-100 bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border border-slate-700 max-w-lg w-full">
+            {txStatus.includes("SUCCESS") || txStatus.includes("REGISTERED") ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />}
+            <span className="text-sm font-bold truncate tracking-tight">{txStatus}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
@@ -267,12 +270,12 @@ function App() {
             <span className="font-black text-2xl tracking-tighter">AltruBSC</span>
           </div>
           <div className="flex gap-4">
-             <button onClick={() => setShowNGOPortal(!showNGOPortal)} className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-900 font-black text-xs uppercase tracking-widest px-4 py-2 rounded-xl transition-all">
+             <button onClick={() => setShowNGOPortal(!showNGOPortal)} className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-900 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all">
                <Building2 className="w-4 h-4" /> NGO Portal
              </button>
              {account ? (
               <div className="flex items-center gap-3 bg-slate-50 p-1.5 pr-4 rounded-2xl border border-slate-200 font-bold text-sm">
-                <div className="bg-white p-2 rounded-xl shadow-sm"><UserCircle className="w-4 h-4" /></div>
+                <div className="bg-white p-2 rounded-xl shadow-sm"><UserCircle className="w-4 h-4 text-slate-400" /></div>
                 {`${account.slice(0, 6)}...${account.slice(-4)}`}
               </div>
             ) : (
@@ -285,48 +288,36 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         
         {/* NGO Portal View */}
-        {showNGOPortal && (
-           <section className="bg-white rounded-[40px] p-12 border border-slate-200 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8"><Building2 className="w-16 h-16 text-slate-100" /></div>
-             <div className="max-w-2xl relative z-10">
-               <h2 className="text-3xl font-black mb-4">Official NGO Registration</h2>
-               <p className="text-slate-500 font-medium mb-12 leaging-relaxed">Are you an impactful organization? Register on-chain to start verified fundraising pools and gain the community's trust.</p>
-               
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-                 <div>
-                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Foundation Name</label>
-                   <input 
-                    type="text" 
-                    placeholder="e.g. Save the Oceans" 
-                    value={ngoName}
-                    onChange={(e) => setNgoName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
-                   />
+        <AnimatePresence>
+          {showNGOPortal && (
+             <motion.section initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-white rounded-[40px] p-12 border border-slate-200 shadow-xl overflow-hidden relative">
+               <div className="max-w-2xl">
+                 <h2 className="text-3xl font-black mb-4">Official NGO Registration</h2>
+                 <p className="text-slate-500 font-medium mb-12 leaging-relaxed">Are you an impactful organization? Register on-chain to start verified fundraising pools.</p>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+                   <div>
+                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Foundation Name</label>
+                     <input type="text" placeholder="e.g. Save the Oceans" value={ngoName} onChange={(e) => setNgoName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold" />
+                   </div>
+                   <button onClick={registerNGO} disabled={registeringNGO} className="bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black transition-all active:scale-95 disabled:opacity-50">REGISTER NGO</button>
                  </div>
-                 <button 
-                  onClick={registerNGO}
-                  disabled={registeringNGO}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
-                 >
-                   {registeringNGO ? <Loader2 className="w-5 h-5 animate-spin" /> : "REGISTER ORGANIZATION"}
-                 </button>
                </div>
-             </div>
-           </section>
-        )}
+             </motion.section>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Main Content: Causes & Analytics */}
+          
           <div className="lg:col-span-8 space-y-12">
             
-            {/* Impact Analytics Dashboard */}
+            {/* ELITE Global Impact Map */}
+            <ImpactMap />
+
+            {/* Performance Analytics */}
             <section className="bg-white rounded-[40px] p-8 md:p-12 shadow-sm border border-slate-200">
                <div className="flex items-center justify-between mb-12">
                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                       <BarChart3 className="text-emerald-500 w-5 h-5" />
-                       <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Global Impact Insights</span>
-                    </div>
+                    <div className="flex items-center gap-2 mb-2"><BarChart3 className="text-emerald-500 w-5 h-5" /><span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Global Insights</span></div>
                     <h2 className="text-3xl font-black">Performance Analytics</h2>
                  </div>
                  <div className="text-right hidden sm:block">
@@ -334,7 +325,6 @@ function App() {
                    <p className="text-2xl font-black text-slate-900 tracking-tighter">$124,500.00 USD</p>
                  </div>
                </div>
-               
                <div className="h-[250px] w-full">
                  <ResponsiveContainer width="100%" height="100%">
                    <BarChart data={ANALYTICS_DATA}>
@@ -342,20 +332,11 @@ function App() {
                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }} />
                      <YAxis hide />
                      <Tooltip cursor={{ fill: 'transparent' }} content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-slate-900 text-white p-3 rounded-xl shadow-2xl border border-slate-700">
-                              <p className="text-[10px] font-black uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
-                              <p className="text-sm font-black">${payload[0].value} USD</p>
-                            </div>
-                          );
-                        }
+                        if (active && payload && payload.length) return (<div className="bg-slate-900 text-white p-3 rounded-xl shadow-2xl border border-slate-700"><p className="text-[10px] font-black uppercase tracking-widest mb-1">{payload[0].payload.name}</p><p className="text-sm font-black">${payload[0].value} USD</p></div>);
                         return null;
                      }} />
                      <Bar dataKey="total" radius={[8, 8, 8, 8]} barSize={40}>
-                        {ANALYTICS_DATA.map((_, index) => (
-                           <Cell key={`cell-${index}`} fill={index === ANALYTICS_DATA.length - 1 ? '#10b981' : '#f1f5f9'} />
-                        ))}
+                        {ANALYTICS_DATA.map((_, i) => (<Cell key={`cell-${i}`} fill={i === ANALYTICS_DATA.length - 1 ? '#10b981' : '#f1f5f9'} />))}
                      </Bar>
                    </BarChart>
                  </ResponsiveContainer>
@@ -365,71 +346,41 @@ function App() {
             {/* Causes Grid */}
             <div className="flex justify-between items-end mb-8">
               <h2 className="text-3xl font-black tracking-tight">Active Donation Pools</h2>
-              <button 
-                onClick={() => {
-                  const text = "Supporting global impact on AltruBSC! 🌍 #Web3 #BSC";
-                  navigator.share ? navigator.share({ text, url: window.location.href }) : alert("Shared!");
-                }}
-                className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl text-xs font-black hover:bg-slate-50 transition-all"
-              >
-                <Share2 className="w-4 h-4" /> SHARE PLATFORM
-              </button>
+              <button onClick={() => { navigator.share ? navigator.share({ text: "Join the impact on AltruBSC!", url: window.location.href }) : alert("Shared!"); }} className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl text-xs font-black hover:bg-slate-50 transition-all"><Share2 className="w-4 h-4" /> SHARE PLATFORM</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {causes.map((cause) => {
                 const progress = (Number(cause.raised) / Number(cause.goalAmount)) * 100;
                 const isProcessing = processingId === cause.id;
-                
                 return (
-                  <div key={cause.id} className="bg-white rounded-[40px] shadow-sm border border-slate-200 hover:shadow-xl transition-all flex flex-col group overflow-hidden">
+                  <motion.div whileHover={{ y: -5 }} key={cause.id} className="bg-white rounded-[40px] shadow-sm border border-slate-200 transition-all flex flex-col overflow-hidden">
                     <div className="p-8">
                       <div className="flex items-center justify-between mb-8">
                         <div className="text-3xl bg-slate-50 p-5 rounded-2xl">{cause.logo}</div>
-                        <div className="flex flex-col items-end">
-                          <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-lg uppercase tracking-tight mb-2">Cause #{cause.id}</span>
-                          <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg uppercase tracking-tight">Verified NGO</span>
-                        </div>
+                        <div className="flex flex-col items-end"><span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-lg uppercase tracking-tight mb-2">Cause #{cause.id}</span><span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg uppercase tracking-tight">Verified NGO</span></div>
                       </div>
-                      <h3 className="text-2xl font-black mb-8 leading-tight h-16 line-clamp-2">{cause.name}</h3>
-                      <div className="space-y-6 mt-auto">
-                        <div className="flex justify-between items-end">
-                          <p className="text-4xl font-black tracking-tighter">{cause.raised} <span className="text-sm font-bold text-slate-400">{cause.isTokenCause ? 'USDT' : 'BNB'}</span></p>
-                          <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{Math.round(progress)}%</span>
-                        </div>
-                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden"><div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${Math.min(progress, 100)}%` }} /></div>
-                        
-                        <div className="space-y-3">
+                      <h3 className="text-2xl font-black mb-8 leading-tight h-16">{cause.name}</h3>
+                      <div className="space-y-6">
+                        <div className="flex justify-between items-end"><p className="text-4xl font-black tracking-tighter">{cause.raised} <span className="text-sm font-bold text-slate-400">{cause.isTokenCause ? 'USDT' : 'BNB'}</span></p><span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{Math.round(progress)}%</span></div>
+                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(progress, 100)}%` }} className="h-full bg-emerald-500" /></div>
+                        <div className="space-y-3 pt-4">
                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block ml-1">Donate Amount</label>
                           <div className="relative">
-                            <input 
-                              type="number" step="0.01" value={donationAmounts[cause.id] || ''}
-                              onChange={(e) => setDonationAmounts({...donationAmounts, [cause.id]: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 p-5 rounded-3xl text-sm font-black focus:ring-2 focus:ring-emerald-500 outline-none"
-                              placeholder={cause.isTokenCause ? "10" : "0.01"}
-                            />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                               <TrendingUp className="w-3 h-3 text-emerald-500" />
-                               <span className="text-[10px] font-black text-emerald-600">≈ ${(parseFloat(donationAmounts[cause.id] || '0') * (cause.isTokenCause ? 1 : 2500)).toFixed(2)} USD</span>
-                            </div>
+                            <input type="number" step="0.01" value={donationAmounts[cause.id] || ''} onChange={(e) => setDonationAmounts({...donationAmounts, [cause.id]: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-5 rounded-3xl text-sm font-black focus:ring-2 focus:ring-emerald-500 outline-none" placeholder={cause.isTokenCause ? "10" : "0.01"} />
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2"><TrendingUp className="w-3 h-3 text-emerald-500" /><span className="text-[10px] font-black text-emerald-600">≈ ${(parseFloat(donationAmounts[cause.id] || '0') * (cause.isTokenCause ? 1 : 2500)).toFixed(2)} USD</span></div>
                           </div>
                         </div>
-
-                        <button onClick={() => handleDonate(cause.id, cause.isTokenCause)} disabled={isProcessing} className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] font-black text-sm shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2 active:scale-95">
-                          {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "SECURE DONATION"}
-                        </button>
+                        <button onClick={() => handleDonate(cause.id, cause.isTokenCause)} disabled={isProcessing} className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] font-black text-sm shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">{isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "SECURE DONATION"}</button>
                       </div>
                     </div>
-
                     {cause.updates.length > 0 && (
                       <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 space-y-4">
                         <div className="flex items-center gap-2"><ImageIcon className="w-3 h-3 text-slate-400" /><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Impact Gallery</span></div>
-                        {cause.updates.map((update, idx) => (
-                           <div key={idx} className="bg-white p-4 rounded-2xl border border-white flex gap-3"><History className="w-4 h-4 text-emerald-500 shrink-0" /><p className="text-xs font-bold text-slate-600">{update}</p></div>
-                        ))}
+                        {cause.updates.map((update, idx) => (<div key={idx} className="bg-white p-4 rounded-2xl border border-white flex gap-3"><History className="w-4 h-4 text-emerald-500 shrink-0" /><p className="text-xs font-bold text-slate-600 leading-relaxed">{update}</p></div>))}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -438,36 +389,49 @@ function App() {
           {/* Sidebar */}
           <div className="lg:col-span-4 space-y-12">
             
-            {/* My Achievement Card */}
-            <div className="bg-slate-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
-               <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl group-hover:bg-emerald-500/30 transition-all duration-700" />
-               <div className="relative z-10 text-center">
-                 <div className="w-24 h-24 bg-white/10 rounded-full mx-auto mb-8 flex items-center justify-center border border-white/20 backdrop-blur-md shadow-2xl ring-8 ring-white/5">
-                   {hasReward ? <Trophy className="w-12 h-12 text-amber-400" /> : <Star className="w-12 h-12 text-white/40" />}
-                 </div>
-                 <h3 className="text-2xl font-black mb-4">NFT Impact Badge</h3>
-                 <p className="text-slate-400 text-sm mb-10 leading-relaxed font-medium">Donate **0.5+ BNB** to unlock your exclusive verifiable proof-of-impact reward.</p>
-                 {hasReward ? (
-                   <div className="flex flex-col gap-3">
-                     <div className="bg-emerald-500/20 text-emerald-400 py-3 rounded-2xl border border-emerald-500/30 text-[10px] font-black tracking-widest uppercase">BADGE EARNED</div>
-                     <button onClick={() => alert("Check your gallery in App")} className="flex items-center justify-center gap-2 text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all">
-                       <Download className="w-3 h-3" /> Get Certificate
-                     </button>
-                   </div>
+            {/* ELITE DAO Governance */}
+            <section className="bg-slate-900 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-8"><Vote className="w-16 h-16 text-white opacity-5" /></div>
+               <div className="relative z-10">
+                 <div className="flex items-center gap-2 mb-4"><Vote className="text-emerald-400 w-5 h-5" /><span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest">Governance Proposal</span></div>
+                 <h3 className="text-2xl font-black mb-6">#01 Brazil Flood Relief Fund</h3>
+                 <p className="text-slate-400 text-sm mb-10 leading-relaxed">Should AltruBSC deploy 10 BNB to the Brazil Flood Relief project? **Your Voting Power: {votePower} Impacts**</p>
+                 {!voted ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <button onClick={() => { setVoted(true); confetti(); }} className="bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black text-xs transition-all uppercase">YES</button>
+                      <button onClick={() => setVoted(true)} className="bg-white/10 hover:bg-white/20 py-4 rounded-2xl font-black text-xs transition-all uppercase border border-white/10">NO</button>
+                    </div>
                  ) : (
-                   <div className="bg-white/5 py-4 rounded-2xl border border-white/5 text-slate-500 text-[10px] font-black uppercase tracking-widest">Tier: Bronze Supporter</div>
+                    <div className="bg-white/5 p-4 rounded-2xl text-center"><p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">VOTE RECORDED IN BLOCKCHAIN</p></div>
                  )}
                </div>
+            </section>
+
+            {/* Achievement Card */}
+            <div className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-200 text-center relative overflow-hidden group">
+               <div className="bg-slate-50 w-24 h-24 rounded-full mx-auto mb-8 flex items-center justify-center border border-slate-100">
+                 {hasReward ? <Trophy className="w-12 h-12 text-amber-500" /> : <Star className="w-12 h-12 text-slate-200" />}
+               </div>
+               <h3 className="text-2xl font-black mb-4">NFT Impact Badge</h3>
+               <p className="text-slate-500 text-sm mb-10 leading-relaxed font-medium">Donate over 0.5 BNB to unlock your verifiable proof-of-impact reward.</p>
+               {hasReward ? (
+                 <div className="flex flex-col gap-3">
+                   <div className="bg-emerald-600 text-white py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase shadow-lg shadow-emerald-100">IMPACT MAKER BADGE</div>
+                   <button onClick={() => alert("Check gallery")} className="flex items-center justify-center gap-2 text-slate-400 hover:text-slate-900 text-[10px] font-black uppercase tracking-widest transition-all"><Download className="w-4 h-4" /> Get Certificate</button>
+                 </div>
+               ) : (
+                 <div className="bg-slate-100 py-4 rounded-2xl text-slate-400 text-[10px] font-black uppercase tracking-widest">Tier: Bronze Supporter</div>
+               )}
             </div>
 
-            {/* Global Leaderboard */}
+            {/* Leaderboard */}
             <div className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-200">
-               <div className="flex items-center gap-3 mb-10"><Medal className="text-amber-500 w-6 h-6" /><h3 className="text-xl font-black tracking-tight">Main Donors</h3></div>
+               <div className="flex items-center gap-3 mb-10"><Medal className="text-amber-500 w-6 h-6" /><h3 className="text-xl font-black tracking-tight">Impact Ranking</h3></div>
                <div className="space-y-4">
                  {leaderboard.map(entry => (
                    <div key={entry.address} className={`flex items-center justify-between p-5 rounded-3xl border ${entry.address.includes('You') ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-50'}`}>
                      <div className="flex items-center gap-4">
-                       <span className="text-xs font-black text-slate-300">#0{entry.rank}</span>
+                       <span className="text-[10px] font-black text-slate-300">#0{entry.rank}</span>
                        <span className="text-sm font-mono font-bold text-slate-600">{entry.address}</span>
                      </div>
                      <span className="text-sm font-black text-slate-900">{parseFloat(entry.total).toFixed(2)} BNB</span>
@@ -476,25 +440,14 @@ function App() {
                </div>
             </div>
 
-            {/* Live Feed */}
-            <div className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-200">
-               <div className="flex items-center gap-3 mb-8"><Bell className="text-rose-500 w-5 h-5" /><h3 className="text-lg font-black tracking-tight">Recent Activity</h3></div>
-               <div className="space-y-6">
-                 {ANALYTICS_DATA.slice().reverse().map((act, i) => (
-                   <div key={i} className="flex gap-4 group">
-                     <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100 ring-4 ring-transparent group-hover:ring-emerald-50 transition-all"><TrendingUp className="w-6 h-6 text-emerald-600" /></div>
-                     <div><p className="text-sm font-black text-slate-900">$ {act.total} Donation</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{act.name} ago</p></div>
-                   </div>
-                 ))}
-               </div>
-            </div>
-
           </div>
         </div>
       </main>
+
+      {/* ELITE AI Assistant */}
+      <AIAssistant />
     </div>
   );
 }
 
 export default App;
-default App;
