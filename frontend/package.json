@@ -15,10 +15,12 @@
     "autoprefixer": "^10.4.27",
     "canvas-confetti": "^1.9.4",
     "ethers": "^6.16.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.7.0",
     "postcss": "^8.5.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "recharts": "^3.8.1",
     "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
