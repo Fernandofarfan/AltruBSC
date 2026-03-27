@@ -97,6 +97,11 @@ function App() {
     }
   };
 
+  const fixMetaMask = async () => {
+    await switchNetwork();
+    await connectWallet();
+  };
+
   const fetchBlockchainData = async () => {
     try {
       const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
@@ -217,13 +222,32 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-emerald-100 pb-20">
-      {!networkOk && account && (
-        <div className="bg-rose-600 text-white py-3 px-4 text-center font-bold flex items-center justify-center gap-3 animate-pulse sticky top-0 z-60">
-          <AlertTriangle className="w-5 h-5" />
-          Switch to Hardhat Local (Chain ID 31337)
-          <button onClick={switchNetwork} className="bg-white text-rose-600 px-3 py-1 rounded-lg text-xs hover:bg-rose-50 transition-colors ml-4">
-            Switch Network
-          </button>
+      {(!networkOk || !account) && (
+        <div className="bg-slate-900 text-white py-4 px-6 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-60 shadow-2xl border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="text-amber-400 w-6 h-6 animate-pulse" />
+            <div>
+              <p className="font-black text-sm tracking-tight text-white">SYSTEM READY FOR HACKATHON</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setup MetaMask with one click below</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <button 
+              onClick={() => {
+                navigator.clipboard.writeText("0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a");
+                alert("Private Key Copied! Now go to MetaMask -> Import Account and paste it.");
+              }}
+              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-black transition-all border border-white/10"
+             >
+               COPY 10,000 BNB KEY
+             </button>
+             <button 
+              onClick={fixMetaMask}
+              className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+             >
+               FIX METAMASK (AUTO-CONNECT)
+             </button>
+          </div>
         </div>
       )}
 
