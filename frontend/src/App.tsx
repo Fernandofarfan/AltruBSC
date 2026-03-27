@@ -67,7 +67,7 @@ function App() {
       const network = await provider.getNetwork();
       
       // Hardhat Local Chain ID is 31337
-      if (network.chainId !== 31337n) {
+      if (network.chainId !== BigInt(31337)) {
         try {
           await (window as any).ethereum.request({
             method: 'wallet_switchEthereumChain',
@@ -110,7 +110,7 @@ function App() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
               <HeartHandshake className="text-emerald-500 w-8 h-8" />
-              <span className="font-bold text-xl tracking-tight text-slate-900">BinanceCare</span>
+              <span className="font-bold text-xl tracking-tight text-slate-900">AltruBSC</span>
             </div>
             <div>
               {account ? (
