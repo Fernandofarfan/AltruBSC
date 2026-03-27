@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, HeartHandshake, ShieldCheck, TrendingUp, Download, Bell, Coins, Loader2, AlertTriangle, CheckCircle2, Trophy, Medal, Star } from 'lucide-react';
+import { Wallet, HeartHandshake, ShieldCheck, TrendingUp, Download, Bell, Coins, Loader2, AlertTriangle, CheckCircle2, Trophy, Medal, Star, Share2, ImageIcon, History } from 'lucide-react';
 import { ethers } from 'ethers';
 import confetti from 'canvas-confetti';
 import { CONTRACT_ADDRESS, CONTRACT_ABI, USDT_ADDRESS, ERC20_ABI, REWARD_NFT_ADDRESS, NFT_ABI } from './contract';
@@ -12,6 +12,7 @@ interface Cause {
   ngo: string;
   logo: string;
   isTokenCause: boolean;
+  updates: string[];
 }
 
 interface Activity {
@@ -38,6 +39,7 @@ function App() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [hasReward, setHasReward] = useState<boolean>(false);
+  const [donationAmounts, setDonationAmounts] = useState<Record<number, string>>({});
 
   const checkNetwork = async () => {
     if (!(window as any).ethereum) return;
@@ -107,6 +109,7 @@ function App() {
         const cause = await contract.causes(i);
         const bnbBalance = await contract.causeBalances(i, ethers.ZeroAddress);
         const usdtBalance = await contract.causeBalances(i, USDT_ADDRESS);
+        const updates = await contract.getCauseUpdates(i);
         
         const isToken = cause.name.includes("(USDT)");
         const raised = isToken ? ethers.formatUnits(usdtBalance, 18) : ethers.formatEther(bnbBalance);
@@ -118,23 +121,22 @@ function App() {
           raised: raised,
           ngo: cause.verifiedNGO,
           logo: isToken ? "🪙" : "🌊",
-          isTokenCause: isToken
+          isTokenCause: isToken,
+          updates: updates
         });
       }
       setCauses(fetchedCauses);
 
-      // Check for user rewards
       if (account && networkOk) {
         const nftContract = new ethers.Contract(REWARD_NFT_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
         const balance = await nftContract.balanceOf(account);
         setHasReward(Number(balance) > 0);
       }
 
-      // Mock Leaderboard (for demo purposes we'd fetch actual big donors)
       setLeaderboard([
         { address: "0xf39...2266", total: "25.5", rank: 1 },
         { address: "0x709...79C8", total: "12.2", rank: 2 },
-        { address: account ? `${account.slice(0,5)}...${account.slice(-4)}` : "You", total: "0.0", rank: 3 }
+        { address: account ? `${account.slice(0,5)}...${account.slice(-4)}` : "You", total: "0.2", rank: 3 }
       ]);
 
     } catch (error) {
@@ -148,6 +150,9 @@ function App() {
     if (!account) return connectWallet();
     if (!networkOk) return switchNetwork();
     
+    const amountStr = donationAmounts[causeId] || (isToken ? "10" : "0.01");
+    if (parseFloat(amountStr) <= 0) return alert("Please enter a valid amount");
+
     setProcessingId(causeId);
     try {
       const provider = new ethers.BrowserProvider((window as any).ethereum);
@@ -155,9 +160,9 @@ function App() {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       
       if (isToken) {
-        setTxStatus("Checking USDT allowance...");
+        setTxStatus(`Checking USDT allowance for ${amountStr}...`);
         const usdt = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);
-        const amount = ethers.parseUnits("100", 18);
+        const amount = ethers.parseUnits(amountStr, 18);
         
         const allowance = await usdt.allowance(account, CONTRACT_ADDRESS);
         if (allowance < amount) {
@@ -166,21 +171,21 @@ function App() {
           await approveTx.wait();
         }
         
-        setTxStatus("Donating USDT...");
+        setTxStatus(`Donating ${amountStr} USDT...`);
         const tx = await contract.donateTokenToCause(causeId, USDT_ADDRESS, amount);
         await tx.wait();
       } else {
-        setTxStatus("Donating BNB...");
-        const tx = await contract.donateToCause(causeId, { value: ethers.parseEther("0.1") });
+        setTxStatus(`Donating ${amountStr} BNB...`);
+        const tx = await contract.donateToCause(causeId, { value: ethers.parseEther(amountStr) });
         await tx.wait();
       }
       
       setTxStatus("DONATION SUCCESSFUL!");
       confetti({
-        particleCount: 150,
-        spread: 70,
+        particleCount: 200,
+        spread: 90,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399', '#ffffff']
+        colors: ['#10b981', '#34d399', '#ffffff', '#fbbf24']
       });
       fetchBlockchainData();
     } catch (error: any) {
@@ -188,6 +193,16 @@ function App() {
     } finally {
       setProcessingId(null);
       setTimeout(() => setTxStatus(''), 5000);
+    }
+  };
+
+  const handleShare = () => {
+    const text = `I just supported a cause on AltruBSC! 🌍\nHelp us bridge transparency to every impact. #SocialGood #Web3 #BSC`;
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: 'AltruBSC Impact', text, url });
+    } else {
+      alert("Coppied to clipboard: " + text);
     }
   };
 
@@ -259,9 +274,18 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Main Content: Causes */}
           <div className="lg:col-span-8">
-            <div className="mb-12">
-              <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Active Fundraising Pools</h1>
-              <p className="text-slate-500 font-medium">Verified by blockchain. Tracked in real-time.</p>
+            <div className="flex justify-between items-end mb-12">
+              <div>
+                <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Active Fundraising Pools</h1>
+                <p className="text-slate-500 font-medium tracking-tight">Donate from 1 USD to infinity. Real-time proof included.</p>
+              </div>
+              <button 
+                onClick={handleShare}
+                className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-black hover:bg-slate-50 transition-all text-slate-600"
+              >
+                <Share2 className="w-4 h-4" />
+                SHARE IMPACT
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -270,35 +294,73 @@ function App() {
                 const isProcessing = processingId === cause.id;
                 
                 return (
-                  <div key={cause.id} className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl transition-all flex flex-col group">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="text-3xl bg-slate-50 p-4 rounded-2xl">{cause.logo}</div>
-                      <span className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-tight">Verified NGO</span>
-                    </div>
-                    
-                    <h3 className="text-2xl font-black mb-6 text-slate-900 leading-tight">{cause.name}</h3>
-                    
-                    <div className="mt-auto">
-                      <div className="flex justify-between items-end mb-4">
-                        <p className="text-3xl font-black text-slate-900 tracking-tighter">
-                          {cause.raised} <span className="text-sm font-bold text-slate-400">{cause.isTokenCause ? 'USDT' : 'BNB'}</span>
-                        </p>
-                        <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{Math.round(progress)}%</span>
+                  <div key={cause.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 hover:shadow-xl transition-all flex flex-col group overflow-hidden">
+                    <div className="p-8">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="text-3xl bg-slate-50 p-4 rounded-2xl">{cause.logo}</div>
+                        <span className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-tight">Verified NGO</span>
                       </div>
                       
-                      <div className="w-full bg-slate-100 rounded-full h-3 mb-8 overflow-hidden">
-                        <div className="h-full bg-linear-to-r from-emerald-500 to-teal-400 transition-all duration-1000" style={{ width: `${Math.min(progress, 100)}%` }} />
-                      </div>
+                      <h3 className="text-2xl font-black mb-6 text-slate-900 leading-tight">{cause.name}</h3>
                       
-                      <button 
-                        onClick={() => handleDonate(cause.id, cause.isTokenCause)}
-                        disabled={isProcessing}
-                        className="w-full py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-black text-sm shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2 active:scale-95"
-                      >
-                        {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {cause.isTokenCause ? 'DONATE 100 USDT' : 'DONATE 0.1 BNB'}
-                      </button>
+                      <div className="mt-auto">
+                        <div className="flex justify-between items-end mb-4">
+                          <p className="text-3xl font-black text-slate-900 tracking-tighter">
+                            {cause.raised} <span className="text-sm font-bold text-slate-400">{cause.isTokenCause ? 'USDT' : 'BNB'}</span>
+                          </p>
+                          <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{Math.round(progress)}%</span>
+                        </div>
+                        
+                        <div className="w-full bg-slate-100 rounded-full h-3 mb-8 overflow-hidden">
+                          <div className="h-full bg-linear-to-r from-emerald-500 to-teal-400 transition-all duration-1000" style={{ width: `${Math.min(progress, 100)}%` }} />
+                        </div>
+                        
+                        {/* Dynamic Amount Input */}
+                        <div className="mb-4">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Donation Amount ({cause.isTokenCause ? 'USDT' : 'BNB'})</label>
+                          <div className="relative">
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              placeholder={cause.isTokenCause ? "10" : "0.01"}
+                              value={donationAmounts[cause.id] || ''}
+                              onChange={(e) => setDonationAmounts({...donationAmounts, [cause.id]: e.target.value})}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm font-black focus:ring-2 focus:ring-emerald-500 outline-hidden transition-all"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-600">
+                             ≈ ${(parseFloat(donationAmounts[cause.id] || '0') * (cause.isTokenCause ? 1 : 2500)).toFixed(2)} USD
+                            </div>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={() => handleDonate(cause.id, cause.isTokenCause)}
+                          disabled={isProcessing}
+                          className="w-full py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-black text-sm shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2 active:scale-95"
+                        >
+                          {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {isProcessing ? 'PROCESSING...' : 'SEND DONATION'}
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Proof of Impact Gallery Feed */}
+                    {cause.updates.length > 0 && (
+                      <div className="bg-slate-50 px-8 py-6 border-t border-slate-200">
+                        <div className="flex items-center gap-2 mb-4">
+                          <ImageIcon className="w-3 h-3 text-slate-400" />
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Proof of Impact Gallery</span>
+                        </div>
+                        <div className="space-y-3">
+                          {cause.updates.map((update, idx) => (
+                             <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-start gap-3">
+                               <div className="bg-emerald-100 p-1.5 rounded-md"><History className="w-3 h-3 text-emerald-600" /></div>
+                               <p className="text-[11px] font-bold text-slate-600">{update}</p>
+                             </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -311,7 +373,7 @@ function App() {
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
               <div className="flex items-center gap-3 mb-8">
                 <Trophy className="text-amber-500 w-6 h-6" />
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">Impact Leaderboard</h3>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Global Leaderboard</h3>
               </div>
               <div className="space-y-4">
                 {leaderboard.map((entry) => (
@@ -326,7 +388,7 @@ function App() {
               </div>
             </div>
 
-            {/* Achievement / NFT Card */}
+            {/* Reward Card */}
             <div className="bg-linear-to-br from-slate-900 to-slate-800 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 -m-8 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl" />
               <div className="relative z-10 text-center">
@@ -337,17 +399,17 @@ function App() {
                     <Star className="w-12 h-12 text-white/50" />
                   )}
                 </div>
-                <h3 className="text-2xl font-black mb-4">NFT Rewards</h3>
+                <h3 className="text-2xl font-black mb-4">God Tier Rewards</h3>
                 <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-                  Donate 0.5+ BNB total to unlock your exclusive **Altru Impact Badge** NFT.
+                  Donate 0.5+ BNB total ($1,250+) to unlock your exclusive **Proof of Impact** NFT Badge.
                 </p>
                 {hasReward ? (
-                  <div className="bg-emerald-500/20 text-emerald-400 py-3 rounded-2xl border border-emerald-500/30 text-xs font-black tracking-widest uppercase">
-                    UNLOCKED: IMPACT_MAKER_#01
+                  <div className="bg-emerald-500/20 text-emerald-400 py-3 rounded-2xl border border-emerald-500/30 text-[10px] font-black tracking-[0.2em] uppercase">
+                    STATUS: IMPACT_REWARD_CLAIMED
                   </div>
                 ) : (
-                    <div className="text-emerald-500 text-xs font-black bg-emerald-500/10 py-3 rounded-2xl">
-                      {account ? "DONATE TO UNLOCK" : "CONNECT WALLET"}
+                    <div className="text-emerald-500 text-[10px] font-black bg-emerald-500/10 py-3 rounded-2xl border border-emerald-500/10">
+                      TIER: BRONZE_SUPPORTER
                     </div>
                 )}
               </div>

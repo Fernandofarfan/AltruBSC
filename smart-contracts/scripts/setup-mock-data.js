@@ -4,8 +4,8 @@ async function main() {
   const connection = await hre.network.connect();
   const [owner, ngoWallet, userWallet] = await connection.ethers.getSigners();
   
-  const platformAddress = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
-  const usdtAddress = "0x610178dA211FEF7D417bC0e6FeD39F05609AD788";
+  const platformAddress = "0x68B1D87F95878fE05B998F19b66F4baba5De1aed";
+  const usdtAddress = "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c";
 
   const DonationPlatform = await connection.ethers.getContractAt("DonationPlatform", platformAddress);
   const MockUSDT = await connection.ethers.getContractAt("MockERC20", usdtAddress);
@@ -24,6 +24,12 @@ async function main() {
   await (await MockUSDT.mint(owner.address, connection.ethers.parseUnits("10000", 18))).wait();
 
   console.log("Mock data setup COMPLETE.");
+
+  // Add Proof of Impact Updates
+  console.log("Adding Proof of Impact updates...");
+  await (await DonationPlatform.connect(ngoWallet).addCauseUpdate(1, "¡Camas de hospital instaladas!")).wait();
+  await (await DonationPlatform.connect(ngoWallet).addCauseUpdate(2, "Primeras cajas de insumos entregadas.")).wait();
+  console.log("Impact updates ADDED.");
 }
 
 main().catch((error) => {

@@ -38,6 +38,9 @@ contract DonationPlatform {
     // Track cause balances: cause ID => token address => balance
     mapping(uint256 => mapping(address => uint256)) public causeBalances;
 
+    // Proof of Impact: causeId => array of update strings (IPFS/URIs)
+    mapping(uint256 => string[]) public causeUpdates;
+
     event NGORegistered(address indexed wallet, string name);
     event CauseCreated(uint256 indexed id, string name, uint256 goalAmount, address verifiedNGO);
     event DonationReceived(uint256 indexed causeId, address indexed donor, address token, uint256 amount);
@@ -118,6 +121,14 @@ contract DonationPlatform {
         _checkAndMintReward(msg.sender); // Check for reward
 
         emit DonationReceived(_causeId, msg.sender, _token, _amount); // Modified event emission
+    }
+
+    function addCauseUpdate(uint256 _causeId, string memory _updateText) external onlyCauseAdmin(_causeId) {
+        causeUpdates[_causeId].push(_updateText);
+    }
+
+    function getCauseUpdates(uint256 _causeId) external view returns (string[] memory) {
+        return causeUpdates[_causeId];
     }
 
     function setRewardNFT(address _rewardNFT) external onlyOwner {
