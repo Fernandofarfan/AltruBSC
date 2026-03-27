@@ -4,8 +4,8 @@ async function main() {
   const connection = await hre.network.connect();
   const [owner, ngoWallet, userWallet] = await connection.ethers.getSigners();
   
-  const platformAddress = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-  const usdtAddress = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
+  const platformAddress = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
+  const usdtAddress = "0x610178dA211FEF7D417bC0e6FeD39F05609AD788";
 
   const DonationPlatform = await connection.ethers.getContractAt("DonationPlatform", platformAddress);
   const MockUSDT = await connection.ethers.getContractAt("MockERC20", usdtAddress);

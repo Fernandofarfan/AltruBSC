@@ -1,5 +1,6 @@
-export const CONTRACT_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-export const USDT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
+export const CONTRACT_ADDRESS = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
+export const USDT_ADDRESS = "0x610178dA211FEF7D417bC0e6FeD39F05609AD788";
+export const REWARD_NFT_ADDRESS = "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e";
 
 export const CONTRACT_ABI = [
   "function registerNGO(address _wallet, string calldata _name) external",
@@ -18,4 +19,10 @@ export const ERC20_ABI = [
   "function allowance(address owner, address spender) external view returns (uint256)",
   "function balanceOf(address account) external view returns (uint256)",
   "function decimals() external view returns (uint8)"
+];
+
+export const NFT_ABI = [
+  "function balanceOf(address owner) external view returns (uint256)",
+  "function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256)",
+  "function tokenURI(uint256 tokenId) external view returns (string)"
 ];

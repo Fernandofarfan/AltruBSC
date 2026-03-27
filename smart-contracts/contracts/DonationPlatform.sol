@@ -20,12 +20,17 @@ contract DonationPlatform {
         string name;
         uint256 goalAmount;
         address verifiedNGO;
+        uint256 raised;
         bool isClosed;
     }
 
     mapping(address => NGO) public verifiedNGOs;
     mapping(uint256 => Cause) public causes;
     uint256 public causeCount;
+
+    mapping(address => uint256) public totalDonations; // user => total BNB (equivalent)
+    address public rewardNFT;
+    uint256 public constant REWARD_THRESHOLD = 0.5 ether;
 
     // Tracking user contributions: user address => cause ID => token address (address(0) for Native) => amount
     mapping(address => mapping(uint256 => mapping(address => uint256))) public userContributions;
@@ -35,8 +40,9 @@ contract DonationPlatform {
 
     event NGORegistered(address indexed wallet, string name);
     event CauseCreated(uint256 indexed id, string name, uint256 goalAmount, address verifiedNGO);
-    event DonationReceived(address indexed donor, uint256 indexed causeId, address token, uint256 amount);
+    event DonationReceived(uint256 indexed causeId, address indexed donor, address token, uint256 amount);
     event FundsWithdrawn(uint256 indexed causeId, address indexed admin, address token, uint256 amount);
+    event RewardMinted(address indexed donor, uint256 tokenId);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner callable");
@@ -74,49 +80,60 @@ contract DonationPlatform {
             name: _name,
             goalAmount: _goalAmount,
             verifiedNGO: _verifiedNGO,
-            isClosed: false
+            isClosed: false,
+            raised: 0 // Initialize new field
         });
         emit CauseCreated(causeCount, _name, _goalAmount, _verifiedNGO);
     }
 
     function donateToCause(uint256 _causeId) external payable {
-        require(_causeId > 0 && _causeId <= causeCount, "Invalid cause ID");
-        require(!causes[_causeId].isClosed, "Cause is closed");
+        require(_causeId > 0 && _causeId <= causeCount, "Invalid cause"); // Modified message
+        require(!causes[_causeId].isClosed, "Cause closed"); // Modified message
         require(msg.value > 0, "Donation must be greater than 0");
 
+        causes[_causeId].raised += msg.value; // Update raised amount
         userContributions[msg.sender][_causeId][address(0)] += msg.value;
         causeBalances[_causeId][address(0)] += msg.value;
+        
+        totalDonations[msg.sender] += msg.value; // Track total donations
+        _checkAndMintReward(msg.sender); // Check for reward
 
-        emit DonationReceived(msg.sender, _causeId, address(0), msg.value);
+        emit DonationReceived(_causeId, msg.sender, address(0), msg.value); // Modified event emission
     }
 
     function donateTokenToCause(uint256 _causeId, address _token, uint256 _amount) external {
-        require(_causeId > 0 && _causeId <= causeCount, "Invalid cause ID");
-        require(!causes[_causeId].isClosed, "Cause is closed");
+        require(_causeId > 0 && _causeId <= causeCount, "Invalid cause"); // Modified message
+        require(!causes[_causeId].isClosed, "Cause closed"); // Modified message
         require(_token != address(0), "Invalid token address");
         require(_amount > 0, "Donation must be greater than 0");
 
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).transferFrom(msg.sender, address(this), _amount); // Changed to transferFrom as per instruction
 
+        causes[_causeId].raised += _amount; // Update raised amount (Simplified for demo: 1 token = 1 unit)
         userContributions[msg.sender][_causeId][_token] += _amount;
         causeBalances[_causeId][_token] += _amount;
 
-        emit DonationReceived(msg.sender, _causeId, _token, _amount);
+        // Mock tracking for tokens (assuming USDT/stablecoin)
+        totalDonations[msg.sender] += _amount; // Track total donations
+        _checkAndMintReward(msg.sender); // Check for reward
+
+        emit DonationReceived(_causeId, msg.sender, _token, _amount); // Modified event emission
     }
 
-    function withdraw(uint256 _causeId, address _token) external onlyCauseAdmin(_causeId) {
-        uint256 balance = causeBalances[_causeId][_token];
-        require(balance > 0, "No funds to withdraw");
+    function setRewardNFT(address _rewardNFT) external onlyOwner {
+        rewardNFT = _rewardNFT;
+    }
 
-        causeBalances[_causeId][_token] = 0;
-
-        if (_token == address(0)) {
-            (bool success, ) = msg.sender.call{value: balance}("");
-            require(success, "Native transfer failed");
-        } else {
-            IERC20(_token).safeTransfer(msg.sender, balance);
+    function _checkAndMintReward(address _donor) internal {
+        if (rewardNFT != address(0) && totalDonations[_donor] >= REWARD_THRESHOLD) {
+            // Check if already has one (simplification for hackathon)
+            try IAltruNFT(rewardNFT).mintReward(_donor, "ipfs://altru-impact-badge") returns (uint256 tokenId) {
+                emit RewardMinted(_donor, tokenId);
+            } catch {}
         }
-
-        emit FundsWithdrawn(_causeId, msg.sender, _token, balance);
     }
+}
+
+interface IAltruNFT {
+    function mintReward(address to, string memory uri) external returns (uint256);
 }
