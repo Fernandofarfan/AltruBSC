@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, HeartHandshake, ShieldCheck, TrendingUp, Download, Bell, ExternalLink, Coins, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Wallet, HeartHandshake, ShieldCheck, TrendingUp, Download, Bell, Coins, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS, CONTRACT_ABI, USDT_ADDRESS, ERC20_ABI } from './contract';
 
@@ -226,7 +226,7 @@ function App() {
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-emerald-100 pb-20">
       {/* Network Warning Banner */}
       {!networkOk && account && (
-        <div className="bg-rose-600 text-white py-3 px-4 text-center font-bold flex items-center justify-center gap-3 animate-pulse sticky top-0 z-[60]">
+        <div className="bg-rose-600 text-white py-3 px-4 text-center font-bold flex items-center justify-center gap-3 animate-pulse sticky top-0 z-60">
           <AlertTriangle className="w-5 h-5" />
           You are on the wrong network! Please switch to Hardhat Local (Chain ID 31337)
           <button onClick={switchNetwork} className="bg-white text-rose-600 px-3 py-1 rounded-lg text-xs hover:bg-rose-50 transition-colors ml-4">
@@ -237,7 +237,7 @@ function App() {
 
       {/* Dynamic Status Notification */}
       {txStatus && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-slide-up border border-slate-700 max-w-lg w-full">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-100 bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-slide-up border border-slate-700 max-w-lg w-full">
           {txStatus.includes("SUCCESS") || txStatus.includes("connected") ? (
              <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
           ) : txStatus.includes("Error") || txStatus.includes("failed") ? (
@@ -254,7 +254,7 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
             <div className="flex items-center gap-3 group cursor-pointer">
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-2xl shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform">
+              <div className="bg-linear-to-br from-emerald-500 to-teal-600 p-2 rounded-2xl shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform">
                 <HeartHandshake className="text-white w-7 h-7" />
               </div>
               <span className="font-black text-2xl tracking-tighter text-slate-900">
@@ -315,7 +315,7 @@ function App() {
 
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {[1,2].map(i => <div key={i} className="bg-white border border-slate-200 h-96 rounded-[2.5rem] p-8 animate-pulse" />)}
+                {[1,2].map(i => <div key={i} className="bg-white border border-slate-200 h-96 rounded-3xl p-8 animate-pulse" />)}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -326,7 +326,7 @@ function App() {
                   const isProcessing = processingId === cause.id;
                   
                   return (
-                    <div key={cause.id} className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 hover:shadow-2xl hover:shadow-emerald-100/30 transition-all duration-500 relative flex flex-col hover:-translate-y-2">
+                    <div key={cause.id} className="group bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-2xl hover:shadow-emerald-100/30 transition-all duration-500 relative flex flex-col hover:-translate-y-2">
                        <div className="flex items-center justify-between mb-8">
                         <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-slate-100 group-hover:scale-110 transition-transform duration-500">
                           {cause.logo}
@@ -357,7 +357,7 @@ function App() {
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-4 mb-8 p-1 overflow-hidden shadow-inner">
                           <div 
-                            className={`h-full rounded-full ${isFunded ? 'bg-emerald-500' : 'bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 bg-[length:200%_auto] animate-gradient'} transition-all duration-1000 ease-out`}
+                            className={`h-full rounded-full ${isFunded ? 'bg-emerald-500' : 'bg-linear-to-r from-emerald-500 via-emerald-400 to-emerald-500 bg-size-[200%_auto] animate-gradient'} transition-all duration-1000 ease-out`}
                             style={{ width: `${Math.min(progress, 100)}%` }}
                           />
                         </div>
@@ -366,7 +366,7 @@ function App() {
                           <button 
                             onClick={() => handleDonate(cause.id, cause.isTokenCause)}
                             disabled={isFunded || isProcessing}
-                            className={`flex-1 py-5 rounded-[1.5rem] font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-3 ${
+                            className={`flex-1 py-5 rounded-3xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-3 ${
                               isFunded 
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                 : isProcessing
@@ -387,7 +387,7 @@ function App() {
                           {isNGOOwner && (
                             <button 
                               onClick={() => handleWithdraw(cause.id, cause.isTokenCause)}
-                              className="p-5 bg-slate-900 text-white rounded-[1.5rem] hover:bg-black transition-all shadow-xl active:scale-95 group/btn"
+                              className="p-5 bg-slate-900 text-white rounded-3xl hover:bg-black transition-all shadow-xl active:scale-95 group/btn"
                               title="Withdraw Funds (NGO only)"
                             >
                               <Download className="w-6 h-6 group-hover/btn:animate-bounce" />
@@ -404,7 +404,7 @@ function App() {
 
           {/* Sidebar: Activity & Stats */}
           <div className="lg:col-span-4 space-y-8">
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 ring-1 ring-slate-100">
+            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 ring-1 ring-slate-100">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="bg-rose-100 p-2 rounded-xl">
@@ -441,7 +441,7 @@ function App() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden group border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden group border border-slate-700">
               <div className="absolute top-0 right-0 -m-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] group-hover:scale-150 transition-transform duration-1000" />
               <div className="relative z-10">
                 <div className="bg-emerald-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-8 border border-emerald-500/20">
@@ -451,7 +451,7 @@ function App() {
                 <p className="text-slate-400 text-sm mb-8 leading-relaxed font-medium">
                   Boost your NGO's trust level. Get listed in our verified directory and access advanced treasury tools.
                 </p>
-                <button className="w-full py-5 bg-emerald-600 text-white rounded-[1.5rem] font-black text-sm hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-950/20 hover:-translate-y-1 active:translate-y-0">
+                <button className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-sm hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-950/20 hover:-translate-y-1 active:translate-y-0">
                   Apply for Verification
                 </button>
               </div>
