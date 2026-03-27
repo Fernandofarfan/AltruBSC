@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+# 🌟 AltruBSC - Frontend App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este es el frontend oficial de la plataforma de donaciones descentralizada **AltruBSC**. 
+Se trata de una aplicación web moderna, rápida y con un diseño de UI/UX profesional y minimalista.
 
-Currently, two official plugins are available:
+## 🛠️ Stack Tecnológico
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **TypeScript**
+- **Vite 8** (Construcción ultrarrápida y recarga en caliente)
+- **Tailwind CSS v4** (Integrado mediante `@tailwindcss/vite` para utilidades de estilo instantáneas)
+- **Framer Motion** (Micro-interacciones y animaciones de página suaves)
+- **Ethers.js v6** (Conexión RPC y lectura de Smart Contracts)
+- **Lucide React** (Iconografía elegante)
 
-## React Compiler
+## 🎨 Diseño y UI
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+La interfaz fue reconstruida completamente bajo principios de **Diseño Minimalista / Funcional**:
+- Paleta monocromática en tonos `zinc` / `slate`.
+- Sombras suaves y efectos de cristal (`backdrop-blur`) en menús de navegación.
+- Componentes altamente responsivos para móviles y escritorio.
+- Sin configuraciones complejas antiguas (`postcss` / `tailwind.config` eliminados en favor del nuevo motor v4 de Tailwind CSS).
 
-## Expanding the ESLint configuration
+## 🚀 Cómo Iniciar el Frontend Localmente
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Asegúrate de que tus Smart Contracts estén desplegados en el backend local de Hardhat y que el servidor de prueba se esté ejecutando en el puerto `:8545`.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. **Instalar Dependencias**
+   ```bash
+   npm install
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+2. **Iniciar el Servidor de Desarrollo**
+   ```bash
+   npm run dev
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3. **Abrir en el Navegador**
+   Automáticamente se levantará en:
+   - `http://localhost:5173` o `http://localhost:5174`
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🔗 Integración con Web3 (MetaMask)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- La app se conecta directamente al RPC predeterminado de Hardhat en `http://127.0.0.1:8545` (Chain ID 31337).
+- Se requiere tener instalada la extensión **MetaMask**.
+- Los interactuadores de frontend (Donación, Perfil, Causas) leen y escriben en los contratos definidos en `src/contract.ts`.
+
+## 📁 Estructura del Código
+
+- `src/App.tsx`: Punto de entrada principal y renderizado interactivo de la UI.
+- `src/contract.ts`: ABIs y direcciones de contratos inyectadas.
+- `src/App.css`: Hoja de estilos principal con los keyframes base de framer y la inyección limpia de Tailwind CSS v4.

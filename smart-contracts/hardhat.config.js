@@ -1,7 +1,12 @@
-import hardhatEthersPlugin from "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-ethers";
+import "hardhat/types/runtime";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 export default {
   solidity: "0.8.28",
-  plugins: [hardhatEthersPlugin],
+  networks: {
+    localhost: {
+      url: "http://127.0.0.1:8545"
+    }
+  }
 };

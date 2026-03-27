@@ -24,10 +24,16 @@ contract DonationPlatform {
         bool isClosed;
     }
 
+    struct Donor {
+        uint256 totalDonated;
+        uint256 donationCount;
+    }
+
     mapping(address => NGO) public verifiedNGOs;
     mapping(uint256 => Cause) public causes;
     uint256 public causeCount;
 
+    mapping(address => Donor) public donors;
     mapping(address => uint256) public totalDonations; // user => total BNB (equivalent)
     address public rewardNFT;
     uint256 public constant REWARD_THRESHOLD = 0.5 ether;
@@ -99,6 +105,8 @@ contract DonationPlatform {
         causeBalances[_causeId][address(0)] += msg.value;
         
         totalDonations[msg.sender] += msg.value; // Track total donations
+        donors[msg.sender].totalDonated += msg.value;
+        donors[msg.sender].donationCount += 1;
         _checkAndMintReward(msg.sender); // Check for reward
 
         emit DonationReceived(_causeId, msg.sender, address(0), msg.value); // Modified event emission
@@ -118,6 +126,8 @@ contract DonationPlatform {
 
         // Mock tracking for tokens (assuming USDT/stablecoin)
         totalDonations[msg.sender] += _amount; // Track total donations
+        donors[msg.sender].totalDonated += _amount;
+        donors[msg.sender].donationCount += 1;
         _checkAndMintReward(msg.sender); // Check for reward
 
         emit DonationReceived(_causeId, msg.sender, _token, _amount); // Modified event emission
@@ -142,6 +152,22 @@ contract DonationPlatform {
                 emit RewardMinted(_donor, tokenId);
             } catch {}
         }
+    }
+
+    function withdraw(uint256 _causeId, address _token) external onlyCauseAdmin(_causeId) {
+        uint256 amount = causeBalances[_causeId][_token];
+        require(amount > 0, "No balance to withdraw");
+        
+        causeBalances[_causeId][_token] = 0;
+        
+        if (_token == address(0)) {
+            (bool success, ) = payable(msg.sender).call{value: amount}("");
+            require(success, "Withdrawal failed");
+        } else {
+            IERC20(_token).safeTransfer(msg.sender, amount);
+        }
+        
+        emit FundsWithdrawn(_causeId, msg.sender, _token, amount);
     }
 }
 

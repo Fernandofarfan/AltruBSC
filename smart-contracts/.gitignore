@@ -1,9 +1,8 @@
 # Dependencies
 node_modules/
-.npm/
+package-lock.json
 
-# Build outputs
-dist/
+# Hardhat build and cache
 artifacts/
 cache/
 typechain-types/
@@ -13,7 +12,7 @@ typechain-types/
 .env.local
 .env.*.local
 
-# IDEs and Editors
+# IDEs
 .vscode/
 .idea/
 *.swp
@@ -22,6 +21,3 @@ typechain-types/
 # OS files
 .DS_Store
 Thumbs.db
-
-# Hardhat
-hardhat-local/
