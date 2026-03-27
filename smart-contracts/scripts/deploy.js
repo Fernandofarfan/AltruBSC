@@ -6,17 +6,24 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
 
-  const DonationPlatform = await connection.ethers.getContractFactory("DonationPlatform");
-  const donationPlatform = await DonationPlatform.deploy();
+  // Deploy DonationPlatform
+  const DonationPlatform = await connection.ethers.deployContract("DonationPlatform");
+  await DonationPlatform.waitForDeployment();
+  const platformAddress = await DonationPlatform.getAddress();
+  console.log("DonationPlatform deployed to:", platformAddress);
 
-  await donationPlatform.waitForDeployment();
+  // Deploy Mock USDT
+  const MockUSDT = await connection.ethers.deployContract("MockERC20", ["Mock USDT", "USDT"]);
+  await MockUSDT.waitForDeployment();
+  const usdtAddress = await MockUSDT.getAddress();
+  console.log("Mock USDT deployed to:", usdtAddress);
 
-  console.log("DonationPlatform deployed to:", await donationPlatform.getAddress());
+  console.log("\nAddresses for frontend:");
+  console.log(`CONTRACT_ADDRESS = "${platformAddress}"`);
+  console.log(`USDT_ADDRESS = "${usdtAddress}"`);
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
