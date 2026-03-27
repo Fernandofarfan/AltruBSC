@@ -1,22 +1,34 @@
 import { motion } from 'framer-motion';
 import { Globe } from 'lucide-react';
 
-const REGIONS = [
+const REGIONS_EN = [
   { id: 'africa', name: 'Africa', active: 12, funds: '2,500 BNB', pos: { top: '50%', left: '50%' } },
   { id: 'latam', name: 'Latin America', active: 8, funds: '1,800 BNB', pos: { top: '55%', left: '25%' } },
   { id: 'asia', name: 'SE Asia', active: 22, funds: '4,200 BNB', pos: { top: '45%', left: '75%' } },
 ];
 
-export const ImpactMap = ({ isDarkMode }: { isDarkMode: boolean }) => {
+const REGIONS_ES = [
+  { id: 'africa', name: 'África', active: 12, funds: '2,500 BNB', pos: { top: '50%', left: '50%' } },
+  { id: 'latam', name: 'Latam', active: 8, funds: '1,800 BNB', pos: { top: '55%', left: '25%' } },
+  { id: 'asia', name: 'SE Asia', active: 22, funds: '4,200 BNB', pos: { top: '45%', left: '75%' } },
+];
+
+export const ImpactMap = ({ isDarkMode, isSpanish }: { isDarkMode: boolean, isSpanish: boolean }) => {
+  const regions = isSpanish ? REGIONS_ES : REGIONS_EN;
+  const title = isSpanish ? "Huella de Impacto Global" : "Global Impact Footprint";
+  const deployed = isSpanish ? "Redes de Despliegue en Vivo" : "Live Deployment Networks";
+  const active_txt = isSpanish ? "ONGs Activas" : "Active NGOs";
+  const total_txt = isSpanish ? "Total" : "Total";
+
   return (
     <section className={`${isDarkMode ? 'bg-slate-900/50 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-[40px] p-8 md:p-12 shadow-sm border overflow-hidden relative backdrop-blur-xl`}>
       <div className="flex items-center justify-between mb-12">
         <div>
            <div className="flex items-center gap-2 mb-2">
               <Globe className="text-emerald-500 w-5 h-5" />
-              <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Live Deployment Networks</span>
+              <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">{deployed}</span>
            </div>
-           <h2 className="text-3xl font-black">Global Impact Footprint</h2>
+           <h2 className="text-3xl font-black">{title}</h2>
         </div>
       </div>
 
@@ -29,7 +41,7 @@ export const ImpactMap = ({ isDarkMode }: { isDarkMode: boolean }) => {
            </svg>
         </div>
 
-        {REGIONS.map((region) => (
+        {regions.map((region) => (
           <motion.div 
             key={region.id}
             initial={{ scale: 0 }}
@@ -48,8 +60,8 @@ export const ImpactMap = ({ isDarkMode }: { isDarkMode: boolean }) => {
                 className={`${isDarkMode ? 'bg-slate-800' : 'bg-slate-900'} text-white p-4 rounded-2xl shadow-2xl mt-4 w-[180px] pointer-events-none border ${isDarkMode ? 'border-white/10' : 'border-slate-700'}`}
               >
                 <p className="text-[10px] font-black uppercase text-emerald-400 tracking-widest mb-1">{region.name}</p>
-                <p className="text-sm font-bold mb-1">{region.active} Active NGOs</p>
-                <p className="text-xs font-medium text-slate-400">Total: {region.funds}</p>
+                <p className="text-sm font-bold mb-1">{region.active} {active_txt}</p>
+                <p className="text-xs font-medium text-slate-400">{total_txt}: {region.funds}</p>
               </motion.div>
             </div>
           </motion.div>
